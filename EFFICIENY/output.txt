@@ -1,0 +1,27 @@
+===============================================================================================
+               SYSTOLIC ARRAY ARCHITECTURAL EXPLORER REPORT
+===============================================================================================
+  Target Matrix Size  : 1024 x 1024
+  Clock Frequency     : 100.0 MHz  (1 cycle = 10.00 ns)
+  Total Math Operations: 2,147,483,648 Operations (MACs)
+===============================================================================================
+Array Size   | PEs (DSPs)   | Tile Count T   | Total Cycles     | Real Latency       | Throughput
+-----------------------------------------------------------------------------------------------
+2x2          | 4            | 512x512        | 537,395,200      | 5.374 s            | 0.40    GOPS
+4x4          | 16           | 256x256        | 168,034,304      | 1.680 s            | 1.28    GOPS
+8x8          | 64           | 128x128        | 46,268,416       | 462.684 ms         | 4.64    GOPS
+16x16        | 256          | 64x64          | 12,124,160       | 121.242 ms         | 17.71   GOPS
+32x32        | 1,024        | 32x32          | 3,112,960        | 31.130 ms          | 68.99   GOPS
+64x64        | 4,096        | 16x16          | 794,624          | 7.946 ms           | 270.25  GOPS
+128x128      | 16,384       | 8x8            | 203,776          | 2.038 ms           | 1053.85 GOPS
+256x256      | 65,536       | 4x4            | 53,120           | 531.20 us          | 4042.70 GOPS
+-----------------------------------------------------------------------------------------------
+  Note: PE/DSP count scales quadratically (H^2). Larger arrays give exponential speedups
+        but consume more silicon area and routing resources on your FPGA chip.
+===============================================================================================
+
+  [TIP] You can run this script with custom matrix size and clock frequency arguments!
+   Example:  python check_systolic_metrics.py 2048 200
+             (Calculates for 2048x2048 matrix at 200 MHz clock)
+
+PS C:\Users\Aman gupta\Desktop\SYSTOLIC ARRAYS> 
