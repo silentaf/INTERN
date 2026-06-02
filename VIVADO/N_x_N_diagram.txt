@@ -1,0 +1,74 @@
+========================================================================================
+                        N x N PARAMETRIZED SYSTOLIC ARRAY ARCHITECTURE
+========================================================================================
+
+                            [ in_psums_top (Flattened N * PSUM_W bits) ]
+                                 |            |                 |
+                                 v            v                 v
+                              +----+       +----+            +----+
+[raw_in_pixels_left]          |    |       |    |            |    |
+ (Flattened N*DATA_W)    +--> |PE00| ----> |PE01| ---...---> |PE0N| ---> (out_pixels_right)
+         |               |    |    |       |    |            |    |
+         v               |    +----+       +----+            +----+
+  +-------------+        |       |            |                 |
+  |             |  D=0   |       v            v                 v
+  | INPUT SKEW  |--------+    +----+       +----+            +----+
+  |   BUFFERS   |        |    |    |       |    |            |    |
+  |  (Delay=i)  |--------+--> |PE10| ----> |PE11| ---...---> |PE1N| ---> (out_pixels_right)
+  |             |  D=1   |    |    |       |    |            |    |
+  |             |        |    +----+       +----+            +----+
+  |             |        |       |            |                 |
+  |             |        |       v            v                 v
+  |             |        |      ...          ...               ...
+  |             |        |       |            |                 |
+  |             |        |       v            v                 v
+  |             |  D=N-1 |    +----+       +----+            +----+
+  |             |--------+--> |PEN0| ----> |PEN1| ---...---> |PENN| ---> (out_pixels_right)
+  +-------------+             |    |       |    |            |    |
+                              +----+       +----+            +----+
+                                 |            |                 |
+                                 v            v                 v
+                          +------------------------------------------+
+                          |      OUTPUT UN-SKEW BUFFERS              |
+                          |      (Delay = (N-1) - j)                 |
+                          +------------------------------------------+
+                                 |            |                 |
+                                 v            v                 v
+                      [ flat_out_psums_bottom (Flattened N * PSUM_W bits) ]
+
+
+========================================================================================
+                                 SINGLE PE ARCHITECTURE
+========================================================================================
+Each PE holds a "Stationary Weight" (W) inside a register.
+
+                 in_psum (Partial Sum from PE above)
+                    |
+                    v
+             +--------------+
+             |              |
+in_pixel     |  out_psum =  |    out_pixel (Passes to right PE)
+-----------> |  in_psum +   | -------------------------------->
+(From left)  | (in_pixel*W) |
+             |              |
+             +--------------+
+                    |
+                    v
+                 out_psum (Passes to bottom PE)
+
+NOTE: Both `out_pixel` and `out_psum` are passed through flip-flops (registers) 
+at the output of the PE, meaning every hop to a new PE takes exactly 1 clock cycle.
+
+
+========================================================================================
+                                 DATA FLATTENING (I/O)
+========================================================================================
+Because Verilog-2001 doesn't support 2D arrays in module ports, we use 1D vectors.
+
+Example for N=4, DATA_W=8 (32 bits total for the left inputs):
+[ 31:24 ]  <-- Goes to Row 3 (Needs 3 cycles of skew delay)
+[ 23:16 ]  <-- Goes to Row 2 (Needs 2 cycles of skew delay)
+[ 15:8  ]  <-- Goes to Row 1 (Needs 1 cycle of skew delay)
+[  7:0  ]  <-- Goes to Row 0 (0 cycles of skew delay)
+
+The generate block automatically wires `[ (i*DATA_W) +: DATA_W ]` to Row `i`.
