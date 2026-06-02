@@ -1,0 +1,74 @@
+Part 1: The Design Assumptions (The Hardware Specifications)
+To construct our cycle-accurate equations, we made the following physical design assumptions based directly on your Verilog RTL files and architecture diagrams:
+
+Weight-Stationary Dataflow:
+
+The weights (a sub-block of Matrix B of size H x H) are loaded into the Processing Elements (PEs) beforehand and remain stationary inside their weight_reg registers.
+Inputs (Matrix A) stream from left to right.
+Partial sums (Matrix C) stream from top to bottom.
+1-Cycle Register Propagation (PE Pipeline):
+
+Each PE has flip-flop registers on its outputs. This means passing data from one PE to the next (horizontally or vertically) takes exactly 1 clock cycle.
+Boundary Skewing & Unskewing:
+
+Input Skew Buffer: Row i of the input matrix is delayed by exactly i cycles before entering the array.
+Output Unskew Buffer: Column j of the output is delayed by exactly (H - 1) - j cycles at the bottom to align the rows perfectly.
+Flat Weight Loading:
+
+The weights for an H x H tile are preloaded in parallel. We assume loading the weights takes exactly H clock cycles (one cycle per row, or loaded completely flat in parallel).
+Assumed Clock Frequency:
+
+By default, we assume a clock speed of 100 MHz (which means 1 clock cycle = 10 nanoseconds, or 100,000,000 clock cycles per second).
+Perfect Memory Bandwidth (No Stalls):
+
+We assume your external Block RAM (BRAM / SRAM) can read inputs and read/write partial sums without any memory stalls (zero wait-state latency).
+Part 2: The Architectural Formulas
+Below are the mathematical equations used to compute each column in the report.
+
+1. Tile Count per Dimension (T)
+The number of blocks along one side of the matrix:
+
+Formula: T = Matrix_Size / Array_Size
+Example (1024x1024 matrix, 16x16 array): T = 1024 / 16 = 64 blocks.
+2. Total Block Runs
+The total number of tile multiplications performed during execution:
+
+Formula: Block_Runs = T * T * T
+Example: 64 * 64 * 64 = 262,144 block runs.
+3. Total Weight Loads
+The number of times the stationary weights are updated in the PEs:
+
+Formula: Weight_Loads = T * T
+Example: 64 * 64 = 4,096 weight loads.
+4. Execution Cycles per Block (Block_Cycles)
+The exact clock cycles required to run a single H x H block multiplication through the skewed array:
+
+Formula: Block_Cycles = H + (H - 1) + (H - 1) = 3H - 2
+H cycles = Streaming H columns of inputs.
+H - 1 cycles = Skew delay of the bottom input row.
+H - 1 cycles = Propagation delay traveling down the H rows.
+5. Total Hardware Cycles (Total_Cycles)
+The exact total number of clock ticks your FPGA needs to complete the 1024x1024 matrix multiplication:
+
+Formula: Total_Cycles = (Weight_Loads * H) + (Block_Runs * (3H - 2))
+Expanded Formula: Total_Cycles = (T * T * H) + (T * T * T * (3H - 2))
+6. Total Math Operations (Total_Ops)
+The total number of floating-point or integer operations in a standard matrix multiplication (each multiply-accumulate count as 2 operations: 1 multiply, 1 add):
+
+Formula: Total_Ops = 2 * (Matrix_Size ^ 3)
+Example: 2 * 1024^3 = 2,147,483,648 operations.
+7. Real Latency
+The real-world execution time in seconds:
+
+Formula: Latency_Seconds = Total_Cycles / Clock_Frequency_in_Hz
+(At 100 MHz, Clock_Frequency_in_Hz is 100,000,000).
+8. Throughput in GOPS (Giga-Operations Per Second)
+The raw performance speed:
+
+Formula: GOPS = (Total_Ops / 1,000,000,000) / Latency_Seconds
+9. Active PE Efficiency (PE Utilization)
+The percentage of cycles the PEs are actively doing useful multiply-accumulate math (rather than idling during skewing and propagation):
+
+Formula: PE_Efficiency = (Active_MAC_Cycles / Total_Cycles) * 100
+Where Active_MAC_Cycles = Block_Runs * H = T * T * T * H
+Expanded Formula: PE_Efficiency = ((T * T * T * H) / Total_Cycles) * 100
